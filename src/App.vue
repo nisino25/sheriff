@@ -1,13 +1,14 @@
 <template>
   <head></head>
 
+
   <div>
     <div class="merchantView">
+
       <div class="wrapper">
   
   
-        <div style="margin: 20px"></div>
-        <!-- <span>{{myPlayer.cards}}</span> -->
+
         <div v-if="!myPlayer?.isSheriff">
 
           <div class="card-display" v-if="myPlayer?.hands && !myPlayer.isSheriff" >
@@ -28,14 +29,28 @@
             </template>
           </div>
     
-          <div class="controller">
+          <div class="controller" style="margin-top: 10px">
 
             <div >
-              <strong style="margin: 2em">{{gameState}}</strong><br>
+              <!-- <strong style="margin: 2em">{{gameState}}</strong><br> -->
+              
+
+              <div v-if="gameState == 'selecting'">
+                Choose which cards to replace
+              </div>
+
+              <div  v-if="gameState == 'loading'">
+                Choose which cards to take to the market
+              </div>
+
               <div class="button-wrapper">
                 <div><button @click="goNext()" class="button1" v-if="gameState== 'selecting'">Ready</button></div>
                 <div><button @click="submit()" class="button1" v-if="gameState== 'loading'">Submit</button></div>
                 <div><button @click="goback()" class="back" v-if="gameState== 'declaring'" >go back</button></div>
+
+                <div v-if="developing" style="margin-left: 30px">
+                  <button @click="autoSubmit()" class="back">skip submit</button>
+                </div>
               </div>
       
               <div class="declratng" v-if="gameState == 'declaring'">
@@ -58,49 +73,103 @@
               </div>
 
               <div v-if="gameState == 'waiting'">
-                <strong>{{myPlayer.declaredNum}} {{myPlayer.declaredItem}}</strong>
-                <br>
+                waiting now ... <br>
+                <strong>You declared {{myPlayer.declaredNum}} {{myPlayer.declaredItem}}</strong>
+                <!-- <br> -->
+                <hr>
                 offring a bribe for the sheriff?
+                <br>
+                <input type="text" id="name" name="name" required minlength="4" maxlength="8"  v-model="bribingCost" style="width: 70px"> coins
+                <!-- <input type="number" placeholder="" style="width: 10px" v-model="bribingCost">  -->
+                <button class="button" style="background-color:#ffcc33;color:black;margin-left:10px" @click="bribeRequest()">request</button>
+                <br>
+                <span v-if="lastRequest">{{lastRequest}}</span>
               </div>
+
+              <div v-if="gameState == 'done'">
+                waiting for other players
+              </div>
+
+
+
             </div>
 
           </div>
         </div>
         
-        <div v-else>
+        <div v-if="myPlayer?.isSheriff" >
           <div class="sheriff-table">
+            
+            
             <table v-if="players">
               <tr>
                 <th><img src="../public/pics/usrer.png" alt=""></th>
                 <th><img src="../public/pics/box-svgrepo-com.svg" alt=""></th>
-                <th>OK</th>
+                <th>pass</th>
                 <th>open</th>
-                <th>accept</th>
+                <th><img src="../public/pics/shush.png" alt="" style="width: 40px; height: auto; padding: 0"></th>
               </tr>
-              <template  v-for="(player,i) in players" :key="i">
-                <tr v-if="player.name !== myPlayer.name">
-                  <td>{{player.name}} <span v-if="player?.isSheriff"></span></td>
-                  <td>
-                    <div v-if="!player.waiting" class="loader"></div>
-                    <div v-else>{{player.declaredNum}} {{player.declaredItem}}</div>
-                  </td>
-                  <td>o</td>
-                  <td>x</td>
-                  <td><img src="../public/pics/shush.png" alt=""></td>
+              <template  v-for="(player,i) in reorderedList" :key="i">
+
+                <tr v-if="player.name !== myPlayer.name && player.state == 'through'" style="opacity:0.3">
+                  <td>{{player.name}}</td>
+                  <td>Done</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
                 </tr>
+
+                <tr v-if="player.name !== myPlayer.name && player.state !== 'through'">
+
+                  <template  v-if="!player.waiting">
+                    <td>{{player.name}} </td>
+                    <td>
+                      <div  class="loader"></div>
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                  </template>
+                  <template  v-else>
+                    <td>{{player.name}}</td>
+                    <td>
+                      <div>{{player.declaredNum}} <img class="icon" :src="getImgUrl(player.declaredItem)" alt="">
+                      </div>
+                    </td>
+                    <td><button @click="passBox(player)"  class="button" style="background-color: green; color: white">&#10003;</button></td>
+                    <td><button @click="openBox(player)" class="button" style="background-color: crimson; color: white">&#x2717;</button></td>
+                    <td @click="accpetBribe(player)"><strong v-if="player?.bribingCost > 0">{{player?.bribingCost}}?</strong></td>
+                  </template>
+                </tr>
+
               </template>
               
             </table>
           </div>
+
+          <div v-if="openingCards" class="opneningCards">
+            <strong  style="color:black">Opening {{target}}'s cards</strong>
+            <div >
+              <template v-for="(item,i) in openingCards" :key="i">
+                <div class="card">
+                  <img :src="getImgUrl(item.name)" :class="getDelayAnimation(i)" alt="">
+                  <br>
+                </div>
+              </template>
+            </div>
+          </div>
+
+
+
+          
         </div> 
   
         
         
-  
         
       </div>
   
-      <div class="players-info" v-if="players">
+      <div class="players-info" v-if="reorderedList">
         <table>
           <tr>
             <th><img src="../public/pics/usrer.png" alt=""></th>
@@ -112,7 +181,7 @@
             <th><img src="../public/pics/coin.svg" alt=""></th>
   
           </tr>
-          <template  v-for="(player,i) in players" :key="i">
+          <template  v-for="(player,i) in reorderedList" :key="i">
             <tr>
               <td><span :style="[player.name == username ? 'color:darkgreen' : '']">{{player.name}}</span> <span v-if="player.isSheriff"><i class="fa fa-star-o" style="color:yellow"></i></span></td>
               <td>{{player.securedItems?.apple.length}}</td>
@@ -127,19 +196,25 @@
         </table>
       </div>
 
-      <div style="position:absolute; bottom:10px; left: 20px;">
-        {{roomCode}}: gamestatus: {{gameStatus}}
+      <div><!-- for the bottom --> 
+
+        <div style="position:absolute; bottom:10px; left: 20px;">
+          #{{roomCode}}. Hello {{username}}! [{{currentRound}}/ {{finalRound}}]
+        </div>
+  
+        <div style="position:absolute; bottom:7.5px; right: 20px;">
+          <i class="fa fa-question-circle" style="font-size:25px;color:red;"></i>
+        </div>
       </div>
 
+
     </div>
 
 
 
-    <div>
-      <!-- {{players}} -->
-      <br>
-    </div>
   </div>
+
+
 
   <transition name="fade" >
     <div class='modal-overlay fade-in' v-if="showModal" style="height: 100vh">
@@ -191,39 +266,39 @@
                   <span :style="username==player ? 'color:red' : ''">{{index+1}}. {{player}}</span><br>
 
                 </template>
-                
-                <!-- <hr> -->
-                <!-- <span @click="showModal = false; readyToPlay = true ">{{}}</span> -->
-                <!-- <template v-for="(player,index) in players" :key="index" style="text-align:left">
-                  <span :style="username==player ? 'color:red' : ''">{{index+1}}. {{player?.role}}</span><br>
-
-                </template> -->
 
                 
             </form>
           </div>
 
-          <div v-if="modalStatus == 4 && hasRevealed" style="color:black">
-            <form onsubmit="event.preventDefault()">
-              <span v-if="myPlayer.role !== 'handsomeprince'">You "{{myPlayer?.name}}" are playing as <strong style="color:red; font-size:250%"><br>{{myPlayer?.role}}</strong><br> </span>
-              <span v-else>You "{{myPlayer?.name}}" are playing as <strong style="color:red; font-size:250%"><br>handsome <br> prince</strong><br> </span>
+          <div v-if="modalStatus == 4 " style="color:black">
+            so you were judged by the sheriff and this is what happens
 
-              <strong>Team</strong><br>
-              <span>{{rules[myPlayer?.role]?.team}}</span><br><br>
+          </div>
 
-              <strong>Description</strong><br>
-              <span>{{rules[myPlayer?.role]?.description}}</span><br><br>
+          <div v-if="modalStatus == 10 " style="color:black">
+            <span v-if="myPlayer.didBoxOpen"> Your box was opened</span>
+            <span v-if="myPlayer.latestSituation =='bribe taken'">Your bribe was accepeted,Your box didn't open </span>
+            <span v-else> Sheriff didn't open your box</span>
 
-              <strong>Win Condtion</strong><br>
-              <span>{{rules[myPlayer?.role]?.winCondition}}</span><br>
+            <hr>
 
-              <hr>
-              <button @click="showModal = false; readyToPlay = true " class="okButton">OK</button>
+            <button @click="closeModal()" class="button" style="background-color:#FF6F3C;">Close</button>
 
+          </div>
 
-                <hr>
-                
-            </form>
+          <div v-if="modalStatus == 15 " style="color:black">
+            <span>{{currentSheriff}} is new Sheriff now!</span>
+
+            <hr>
+
+            <button @click="showingNewSheriff = false; showModal = false " class="button" style="background-color:forestgreen;">Close</button>
+
+          </div>
+
+          <div v-if="modalStatus == 20 " style="color:black">
+            the game is over
+
           </div>
 
           
@@ -234,13 +309,12 @@
 
   </transition>
 
-
 </template>
 
 <script>
 import {cards} from './const/cards.js'
 import db from './firebase.js';
-
+import AOS from "aos";
 
 var randomWords = require('random-words');
 import { copyText } from 'vue3-clipboard'
@@ -250,9 +324,7 @@ export default {
   data(){
     return{
       cards,
-      players : {
-        playerOne: {hands: undefined}
-      },
+      players : {},
       roomCode: undefined,
       gameState: 'selecting',
 
@@ -260,7 +332,8 @@ export default {
       removeableIndex: [],
 
       // developing: true,
-      developing: false,
+      developing: true,
+      isHost: false,
 
       declaredItem: undefined,
 
@@ -285,27 +358,30 @@ export default {
       onlineStatus: undefined,
       isAdmin: false,
       gameStatus: undefined,
-      gotInitialData: false,
+
+      bribingCost: 0,
+      lastRequest: undefined,
+
+      openingCards: undefined,
+      target: undefined,
+      progressNum: 0,
       // roomCode
+
+      currentRound: 0,
+
+      globalList: [],
+      showingNewSheriff: false,
+
 
       
     }
   },
   methods:{
+    
     setup(){
       this.modalStatus++
-
-
-      // console.log(this.hands)
-
     },
     getSixCards(){
-      // let list = []
-      // let count =0 
-      // while(count  < 6){
-
-      //   count++
-      // }
       let list = []
       let count =0 
       let num 
@@ -351,7 +427,7 @@ export default {
     rePick(){
       // remove from the array
       let array = []
-      // let limit = this.trashNum
+      // let limit = this.trashNumkkk0k0k0kk0
       for(let i in this.myPlayer.hands){
         if(this.myPlayer.hands[i].trashing){
           i = parseInt(i)
@@ -401,6 +477,47 @@ export default {
       //   count++
       // }
       
+
+    },
+    reRepick(player){
+            // remove from the array
+      let array = []
+      // let limit = this.trashNum
+      for(let i in player.hands){
+        if(player.hands[i].loading){
+          i = parseInt(i)
+          array.push(i)
+        }
+      }
+      this.removeableIndex = array
+
+      // let actualIndex
+      for (var i = this.removeableIndex.length -1; i >= 0; i--){
+        // actualIndex = this.myPlayer.hands[this.removeableIndex[i]].index
+        player.hands.splice(this.removeableIndex[i],1);
+      }
+
+      while(player.hands.length < 6){
+        let num = Math.random()
+
+        if(num< 0.1764){
+          player.hands.push({type:'legal',name: 'apple',reward: 2, penalty: 2,  trashing: false, loading: false })
+        }else if(num < 0.3529){
+          player.hands.push({type:'legal',name: 'cheese',reward: 3, penalty: 2,  trashing: false, loading: false },)
+        }else if(num < 0.5293){
+          player.hands.push({type:'legal',name: 'bread',reward: 3, penalty: 2,  trashing: false, loading: false },)
+        }else if(num < 0.7057){
+          player.hands.push({type:'legal',name: 'chicken',reward: 4, penalty: 2,  trashing: false, loading: false },)
+        }else if(num < 0.77922){
+          player.hands.push({type:'illegal',name: 'pepper',reward: 6, penalty: 4,  trashing: false, loading: false },)
+        }else if(num < 0.85274){
+          player.hands.push({type:'illegal',name: 'liquor',reward: 7, penalty: 4,  trashing: false, loading: false },)
+        }else if(num < 0.92626){
+          player.hands.push({type:'illegal',name: 'silk',reward: 8, penalty: 4,  trashing: false, loading: false },)
+        }else {
+          player.hands.push({type:'illegal',name: 'crossbow',reward: 9, penalty: 4,  trashing: false, loading: false },)
+        }
+      }
 
     },
     getImgSrc(name){
@@ -481,7 +598,7 @@ export default {
 
 
 
-    // ------------------------------------
+    // ---------------------------------------------
     generateRandomUsername(){
       this.username =randomWords();
     },
@@ -518,6 +635,7 @@ export default {
       this.modalStatus++
     },
     createARoom(){
+      this.isHost = true
       this.warning = undefined
       let result = this.generateRoomCode()
       this.skipFlag = false
@@ -593,6 +711,15 @@ export default {
 
       this.multiAssignRoles()
 
+      let list = []
+      let count = 0
+      while(count < 3){
+        for(let i in this.globalList){
+          list.push(this.globalList[i])
+        }
+        count++
+      }
+
       // sending the data for the first time
       this.detailData =[{gameStatus: 'ready'}]
       const ref = db.collection('rooms')
@@ -601,6 +728,8 @@ export default {
         players: this.players,
         detailData: JSON.stringify( this.detailData),
         officialLog: '',
+        currentRound: 1,
+        orderList: list
       })
 
       console.log('done closing room ----------------')
@@ -612,8 +741,9 @@ export default {
       // initalizing the obj
       let count = 0
       this.players = {}
-      this.chatList = {}
+      this.globalList = []
       while(count < this.members.length){
+        this.globalList.push(this.members[count])
         this.players[this.members[count]] = {
           name: this.members[count], 
           isSheriff: false,
@@ -621,9 +751,13 @@ export default {
           caughtCount: 0,
           catchCount: 0,
           hands: this.getSixCards(),
-          balance: 10,
+          balance: 50,
           waiting: false,
           state: false,
+          bribingCost:0,
+          latestSituation: false,
+          didBoxOpen: false,
+          index: count,
         }
 
         if(count == 0){
@@ -634,7 +768,6 @@ export default {
         count++
       }
 
-      console.log(this.players)
       
       return 
 
@@ -643,53 +776,202 @@ export default {
 
       
     },
+    
+
+    openBox(player){
+      this.target = player.name
+      player.didBoxOpen =false
+      let list  =[]
+      for(let i in player.hands){
+        if(player.hands[i].loading){
+          list.push(player.hands[i])
+        }
+      }
+      this.openingCards = list
+    },
+    passBox(player){
+      player.didBoxOpen =false
+      for(let i in player.hands){
+        let item = player.hands[i]
+      
+        if(item.loading){
+
+          if(item.type == 'illegal'){
+            player.securedItems['illeagl'].push(item)
+          }else{
+            player.securedItems[item.name].push(item)
+          }
+        }
+      }
+
+      this.reRepick(player)
+      player.state = 'through'
+      this.updatingWholeData()
+    },
+
+
+    bribeRequest(){
+      if(!this.bribingCost ||  this.bribingCost ==0){
+        alert('It has to be more than 0')
+        return
+      } 
+      if(this.myPlayer.balance < this.bribingCost){
+        alert('You do not have enought money')
+        return
+      } 
+      if( confirm(`Are you sure you want to make a request to the shefiff with ${this.bribingCost} coins?`) == true){
+        this.myPlayer.bribingCost = this.bribingCost
+        this.updatingData()
+        this.lastRequest = `You sent the bribe to the sheriff with ${this.bribingCost} coins`
+      }else{
+        return
+      }
+
+
+
+    },
+
+    accpetBribe(player){
+      // take out the money and let it pass
+      this.passBox(player)
+      if( confirm(`Are you sure you want to take the bribe from ${player.name}?`) == true){
+        this.myPlayer.balance = this.myPlayer.balance +  parseInt(player.bribingCost)
+        player.balance-= player.bribingCost
+        player.bribingCost = 0
+        player.latestSituation = 'bribe taken'
+
+        this.passBox(player)
+        this.lastRequest = `You sent the bribe to the sheriff with ${this.bribingCost} coins`
+      }
+    },
 
     ReciveTheData(){
       console.log(this.roomCode)
       
       db.collection("rooms").doc(`${this.roomCode}`)
       .onSnapshot((doc) => {
-
-        this.gameStatus = doc.data().gameStatus
-        this.members = JSON.parse(doc.data()?.members)
+        this.currentRound = parseInt(doc.data().currentRound)
         
-        if(!this.members.includes(this.username)){
-          this.joinARoom()
-          return 
+        // joining room and wait until it closes
+        if(this.progressNum ==0){
+          this.gameStatus = doc.data().gameStatus
+          this.members = JSON.parse(doc.data()?.members)
+          this.finalRound = parseInt(doc.data().finalRound)
+          this.globalList = doc.data().orderList
+          
+          if(!this.members.includes(this.username)){
+            this.joinARoom()
+            return 
+          }
+
+          if(this.gameStatus == 'playing') this.progressNum = 1
+
         }
 
-        if(this.gameStatus == 'playing'){
-          
-          
-
+        // got the inital data to start the game
+        if(this.progressNum == 1){
           this.gameStatus = 'playing'
           this.modalStatus++
-          this.showModal = false
+
           this.detailData = JSON.parse(doc.data().detailData)
-          if(!this.gotInitialData){
-            this.players = doc.data().players
-            this.gotInitialData = true
-          }
-
-          if(this.myPlayer.isSheriff){
-            this.players = doc.data().players
-          }
-
-          console.log(`getting new data`)  
-
-
+          this.showModal = false
+          this.players = doc.data().players
           
-            
-            
-            
-            
-          
+
+          this.progressNum = 2
+
+          if(this.myPlayer.isSheriff) this.progressNum = 10
 
         }
+
+        if(this.progressNum == 1.5){
+          // this.gameStatus = 'playing'
+          this.players = doc.data().players
+
+          this.progressNum = 2
+
+          if(this.myPlayer.isSheriff) this.progressNum = 10
+
+        }
+
+
+        // for the one that is figuring out what to take
+        if(this.progressNum ==2){
+          if(this.myPlayer.state == 'being judged') this.progressNum = 3
+        }
+
+
+        // this is after loading, currently getting judee
+        if(this.progressNum == 3){
+          this.players = doc.data().players 
+          if(this.myPlayer.state == 'through') this.progressNum = 4
+        }
+
+        // after you got inspected 
+        if(this.progressNum == 4){
+          this.players = doc.data().players
+          this.showModal = true
+          this.modalStatus = 10
+          this.progressNum = 5 
+
+        }
+
+        if(this.progressNum == 5){
+          this.players = doc.data().players
+          this.gameState = 'done'
+
+          // if(this.waitingList.length == this.players.length -1)
+
+        }
+
+        // for the sheriff
+        if(this.progressNum == 10){
+          this.players = doc.data().players
+          // do something to change the sheriff
+          if(this.waitingList?.length == this.reorderedList.length ){
+            this.progressNum = 11
+          }
+        } 
+
+
+        if(this.progressNum == 11){
+          // get the next sheriff and flip the shit
+          const nextSheriff = this.players[this.globalList[this.currentRound]]
+          console.log(`next sheriff is ${nextSheriff.name}`)
+          this.myPlayer.isSheriff = false
+          nextSheriff.isSheriff = true
+          for(let i in this.players){
+            let player = this.players[i]
+            player.waiting =  false
+            player.state = false
+            player.bribingCost = 0
+            player.latestSituation = false
+            player.didBoxOpen = false
+          }
+
+
+          const ref = db.collection('rooms')
+          this.progressNum = 20
+          ref.doc(`${this.roomCode}`).update({
+            currentRound: this.currentRound+1,
+            players: this.players
+          })
+        }
         
-      }
-      )
+
+        if(this.progressNum == 20){
+          this.progressNum = 1.5
+        }
+
+        
+
+      
+        
+      
+      })
     },
+
+
 
     updatingData(){
       console.log('updating')
@@ -703,20 +985,136 @@ export default {
 
     },
 
+    updatingWholeData(){
+      console.log('updating the whole')
+      const ref = db.collection('rooms')
+      ref.doc(`${this.roomCode}`).update({
+       players: this.players
+      })
+
+    },
+
+    finishGame(){
+      this.showModal = true
+      this.modalStatus = 20
+    },
+
+
+
+
+
+    getImgUrl(item) {
+      return require('../public/pics/'+item+ '.svg')
+    },
+    sleep(ms) {
+      return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+      });
+    },
+    async getDelayAnimation(){
+      await this.sleep(500)
+      return 'open'
+    },
+
+    closeModal(){
+      this.showModal= false
+      if(this.showingNewSheriff){
+        this.showingNewSheriff = false
+        this.modalStatus = 15
+        this.showModal = true
+      }
+    },
+
+
+    autoSubmit(){
+      let min = Math.ceil(5);
+      let max = Math.floor(0);
+      let random = Math.floor(Math.random() * (max - min) + min);
+      
+      let count = 0
+      while(count <= random){
+        this.myPlayer.hands[count].loading = true
+        count++
+      }
+
+      min = Math.ceil(4);
+      max = Math.floor(0);
+      random = Math.floor(Math.random() * (max - min) + min);
+      switch(random){
+        case 0:
+          this.declaredItem = 'apple'
+          break;
+
+        case 1:
+          this.declaredItem = 'cheese'
+          break;
+
+        case 2:
+          this.declaredItem = 'bread'
+          break;
+
+
+        case 3:
+          this.declaredItem = 'chicken'
+          break;
+      }
+
+      
+      this.gameState = 'waiting'
+      this.myPlayer.waiting = true
+      this.myPlayer.declaredItem =  this.declaredItem
+      this.myPlayer.declaredNum= this.loadingNum
+      this.myPlayer.state= 'being judged'
+
+      this.updatingData()
+      
+
+      
+
+    },
+
+
   },
   mounted(){
     console.clear()
 
+    AOS.init()
+
     this.setup()
 
     this.generateRandomUsername()
+  },
 
-    // this.players
-    // console.log(this.cards)
+  watch:{
+    roomCode(){
+      if(!this.developing || !this.roomCode || this.isHost) return
 
-    // this.gameState= 'selecting'
+      console.log(this.roomCode)
+      if(this.roomCode >= 1000){
+        console.log('oh yeah')
+        this.joinARoom()
 
-    // if(this.developing) this.skipping()
+      }
+    },
+    currentRound(){
+      if(!this.currentRound) return
+      if(this.currentRound == 0 || this.currentRound == 1) return
+
+      if(this.currentRound > this.finalRound){
+        this.finishGame()
+        return 
+      }
+
+      this.gameState = 'selecting'
+      this.bribingCost = 0
+      if(!this.showModal) this.modalStatus = 15
+      this.showModal = true
+      this.showingNewSheriff = true
+      
+
+
+      this.progressNum = 20
+    }
   },
 
   computed:{
@@ -759,25 +1157,53 @@ export default {
     },
 
     waitingList(){
-      if(this.onlineStatus !== 'ready') return
       // let count =0 
       let list = []
       for(let i in this.players){
-        if(!this.players[i].waiting){
+        if(this.players[i].isSheriff){
           list.push(this.players[i].name)
+        }else{
+          if(this.players[i].state == 'through' ){
+            list.push(this.players[i].name)
+          }
         }
       }
 
       return list
       
     },
-    // removeValFromIndex(){
-    //   let array
-      
 
-    //   // array.sort(function(a,b){ return b - a; });
-    //   return array
-    // }
+    reorderedList(){
+      let list = []
+      for(let i in this.players){
+        list.push(this.players[i])
+      }
+
+      list.sort((a,b) => a.index - b.index);
+
+      return list
+    },
+
+    finalRound(){
+      if(this.currentRound == 0 || !this.currentRound) return 
+      return this.reorderedList.length * 2
+    },
+
+    currentSheriff(){
+      if(!this.players) return
+      for(let i in this.players){
+        if(this.players[i].isSheriff)
+        return this.players[i].name
+      }
+
+      return undefined
+
+
+    },
+
+
+
+    
   },
 }
 </script>
@@ -1153,26 +1579,31 @@ input[type=number], select {
 
   color: black;
   font-weight: bold;
-  position: absolute;
+  /* position: absolute; */
 
-  width: 90%;
+  width: 90vw;
 
-  top: 40%;
+  /* top: 25%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%); */
 }
 
 .sheriff-table table {
   font-family: arial, sans-serif;
   border-collapse: collapse;
   width: 100%;
-  border-spacing: 100px;
+  border-spacing: 80px;
 }
 
 .sheriff-table table img{
   padding: 5px;
-  width: 25px;
+  width: 22px;
   height: auto;
+}
+
+.sheriff-table .icon{
+  margin: -10px 0px;
+
 }
 
 .sheriff-table td, th {
@@ -1197,7 +1628,7 @@ input[type=number], select {
 }
 
 .sheriff-table table td{
-  padding: 20px;
+  padding: 18px 10px 18px 10px;
 }
 
 .sheriff-table .loader{
@@ -1216,9 +1647,48 @@ input[type=number], select {
 
 }
 
+.button {
+  
+  border: none;
+  color: white;
+  padding: 8px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 15px;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 8px;
+}
 
+.opneningCards{
+  width: 80vw;
+  margin: auto auto;
+  background-color: lightgrey;
+  border-radius: 10px;
+  padding:10px 10px 20px 10px;
+  margin-top: 20px;
+}
+.opneningCards div{
+  display: flex;
+  /* background-color: red; */
+}
 
-/* players-info ------------------------------------------------------------------------ */
+.opneningCards img{
+  margin-top:25px;
+  width: 40px;
+  height: auto;
+  /* opacity: 0; */
+  transition-timing-function: linear;
+  transition: all 1.5s ease;
+  /* background-color: red; */
+}
+
+.open {
+	opacity: 1;
+}
+
+/* players-info ------------------------------------------------------ */
 .players-info{
   color: black;
   font-weight: bold;
