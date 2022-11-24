@@ -842,7 +842,7 @@ export default {
 
     },
     closeTheRoom(){
-      if(this.members.length <4) return
+      if(this.members.length <3) return
 
       this.multiAssignRoles()
 
