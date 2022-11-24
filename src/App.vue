@@ -453,8 +453,8 @@ export default {
       tempName: 'playerOne',
       removeableIndex: [],
 
-      developing: false,
-      // developing: true,
+      // developing: false,
+      developing: true,
       isHost: false,
 
       declaredItem: undefined,
@@ -1728,7 +1728,8 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: white;
-  /* margin-top: 60px; */
+  margin-top: 0;
+  padding: 0;
 }
 
 body{
@@ -1920,7 +1921,7 @@ input[type=number], select {
   /* position:relative; */
   width: 90vw;
   /* height: 70vh; */
-  margin: 10px auto 0;
+  margin: 0px auto 0;
   /* display:flex; */
   /* background-color: black; */
 }
@@ -1951,7 +1952,7 @@ input[type=number], select {
 
 .large-card{
   width: 10em;
-  aspect-ratio : 2.5/ 3.5;
+  aspect-ratio : 2.5/ 3;
   border-radius: 0.5em;
   font-size: 125%;
 
@@ -1959,8 +1960,8 @@ input[type=number], select {
 }
 
 .small-card{
-  width: 28%;
-  aspect-ratio : 2.5/ 3.5;
+  width: 24%;
+  aspect-ratio : 2.5/ 3.25;
   border-radius: 0.5em;
   font-size: 90%;
 }
@@ -2042,6 +2043,7 @@ input[type=number], select {
   background-color: DarkOrchid;
   padding: 5% 10%;
   border-radius: 5%;
+  border-radius: 5px;
   /* color:blue; */
 }
 
