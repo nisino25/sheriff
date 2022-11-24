@@ -188,7 +188,7 @@
               <td>{{player.securedItems?.cheese.length}}</td>
               <td>{{player.securedItems?.bread.length}}</td>
               <td>{{player.securedItems?.chicken.length}}</td>
-              <td>{{player.securedItems?.illeagl.length}}</td>
+              <td>{{player.securedItems?.illegal.length}}</td>
               <td>{{player.balance}}</td>
             </tr>
           </template>
@@ -273,17 +273,57 @@
 
           <div v-if="modalStatus == 4 " style="color:black">
             so you were judged by the sheriff and this is what happens
-
+            <button @click="showModal = false"> close</button>
           </div>
 
           <div v-if="modalStatus == 10 " style="color:black">
-            <span v-if="myPlayer.didBoxOpen"> Your box was opened</span>
-            <span v-if="myPlayer.latestSituation =='bribe taken'">Your bribe was accepeted,Your box didn't open </span>
-            <span v-else> Sheriff didn't open your box</span>
 
+            <section  v-if="myPlayer.didBoxOpen">
+              <span> Your box was opened</span>
+              <hr>
+              <section v-if="!myPlayer.wasTruth">
+                <span > AND You were lying</span>
+                <br>
+                <strong>You had to pay {{myPlayer.penaltyCost}} for the penalty </strong>
+                <br>
+                <strong v-if="myPlayer.currentReward > 0">You got paid {{myPlayer.currentReward}} for the declared items </strong>
+              </section>
+            </section>
+
+            <section  v-if="!myPlayer.didBoxOpen">
+              <span v-if="myPlayer.latestSituation =='bribe taken'">Your bribe was accepeted,Your box didn't open </span>
+              <span v-if="myPlayer.bribingCost >0 || !myPlayer.didBoxOpen"> Sheriff didn't open your box</span>
+              <br>
+
+              <strong>You got paid {{myPlayer.currentReward}} for the items</strong>
+            </section>
+            
+            
             <hr>
 
             <button @click="closeModal()" class="button" style="background-color:#FF6F3C;">Close</button>
+
+          </div>
+
+          <div v-if="modalStatus == 11 " style="color:black">
+            <span>{{theTarget.name}} was telling the truth</span>
+            <br>
+            <strong>You had to pay {{penaltyCost}}</strong>
+
+            <hr>
+
+            <button @click="closeModal()" class="button" style="background-color:crimson;">Close</button>
+
+          </div>
+
+          <div v-if="modalStatus == 12 " style="color:black">
+            <span>{{theTarget.name}} was not telling the truth</span>
+            <br>
+            <strong>{{theTarget.name}} had to pay {{penaltyCost}}</strong>
+
+            <hr>
+
+            <button @click="closeModal()" class="button" style="background-color:crimson;">Close</button>
 
           </div>
 
@@ -296,10 +336,80 @@
 
           </div>
 
-          <div v-if="modalStatus == 20 " style="color:black">
-            the game is over
+          <div v-if="modalStatus == 20 " style="color:black; text-align:left" class='summary'>
+            Winner is <strong style="color: crimson; font-size: 125%">{{generalData.winner}}!</strong>
+            <hr>
+            <template v-for="(player,i) in reorderedList" :key=i>
+              <span>{{player.name}}: <strong>{{player.balance}}pt</strong>   ({{player.illegalReward}}pt from <img src="../public/pics/handcuffs.svg" alt=""> )</span><br>
+            </template>
 
+            <hr>
+            
+            <span><img src="../public/pics/apple.svg" alt=""> <img src="../public/pics/king.svg" alt=""> (20pt): 
+              <template v-for="(player,i) in generalData?.kingsAndQueens.appleKing" :key=i>
+                <strong style="color:GoldenRod; font-size:120%">{{player}}, </strong>
+              </template>
+              <span v-if="generalData?.kingsAndQueens.appleKing.length ==0"> nobody</span>
+            </span><br>
+
+            <span><img src="../public/pics/apple.svg" alt=""> <img src="../public/pics/queen.svg" alt=""> (10pt): 
+              <template v-for="(player,i) in generalData?.kingsAndQueens.appleQueen" :key=i>
+                <strong style="color:Grey">{{player}}, </strong>
+              </template>
+              <span v-if="generalData?.kingsAndQueens.appleQueen.length ==0"> nobody</span>
+            </span><br><br>
+
+            <span><img src="../public/pics/cheese.svg" alt=""> <img src="../public/pics/king.svg" alt=""> (15pt): 
+              <template v-for="(player,i) in generalData?.kingsAndQueens.cheeseKing" :key=i>
+                <strong style="color:GoldenRod; font-size:120%">{{player}}, </strong>
+              </template>
+              <span v-if="generalData?.kingsAndQueens.cheeseKing.length ==0"> nobody</span>
+            </span><br>
+
+            <span><img src="../public/pics/cheese.svg" alt=""> <img src="../public/pics/queen.svg" alt=""> (10pt): 
+              <template v-for="(player,i) in generalData?.kingsAndQueens.cheeseQueen" :key=i>
+                <strong style="color:Grey;font-size:120%">{{player}}, </strong>
+              </template>
+              <span v-if="generalData?.kingsAndQueens.cheeseQueen.length ==0"> nobody</span>
+            </span><br><br>
+
+            <span><img src="../public/pics/bread.svg" alt=""> <img src="../public/pics/king.svg" alt=""> (15pt): 
+              <template v-for="(player,i) in generalData?.kingsAndQueens.breadKing" :key=i>
+                <strong style="color:GoldenRod; font-size:120%">{{player}}, </strong>
+              </template>
+              <span v-if="generalData?.kingsAndQueens.breadKing.length ==0"> nobody</span>
+            </span><br>
+
+            <span><img src="../public/pics/bread.svg" alt=""> <img src="../public/pics/queen.svg" alt=""> (10pt): 
+              <template v-for="(player,i) in generalData?.kingsAndQueens.breadQueen" :key=i>
+                <strong style="color:Grey;font-size:120%">{{player}}, </strong>
+              </template>
+              <span v-if="generalData?.kingsAndQueens.breadQueen.length ==0"> nobody</span>
+            </span><br><br>
+
+            
+            
+
+            <span><img src="../public/pics/chicken.svg" alt=""> <img src="../public/pics/king.svg" alt=""> king (10pt): 
+              <template v-for="(player,i) in generalData?.kingsAndQueens.chickenKing" :key=i>
+                <strong style="color:GoldenRod; font-size:120%">{{player}}, </strong>
+              </template>
+              <span v-if="generalData?.kingsAndQueens.chickenKing.length ==0"> nobody</span>
+            </span><br>
+
+            <span><img src="../public/pics/chicken.svg" alt=""> <img src="../public/pics/queen.svg" alt=""> (5pt): 
+              <template v-for="(player,i) in generalData?.kingsAndQueens.chickenQueen" :key=i>
+                <strong style="color:Grey;font-size:120%">{{player}}, </strong>
+              </template>
+              <span v-if="generalData?.kingsAndQueens.chickenQueen.length ==0"> nobody</span>
+            </span><br><br>
+
+            
+            
+            
           </div>
+
+          
 
           
 
@@ -331,8 +441,8 @@ export default {
       tempName: 'playerOne',
       removeableIndex: [],
 
+      developing: false,
       // developing: true,
-      developing: true,
       isHost: false,
 
       declaredItem: undefined,
@@ -371,6 +481,13 @@ export default {
 
       globalList: [],
       showingNewSheriff: false,
+      theTarget: undefined,
+      wasTruth: undefined,
+      penaltyCost: undefined,
+
+      showingSummary: false,
+      generalData: undefined,
+
 
 
       
@@ -536,6 +653,8 @@ export default {
       // let text;
       if(this.trashNum == 0 && confirm(`Are you sure not changing your cards?`) == true){
         this.gameState = 'loading' 
+        return
+      }else if(this.trashNum == 0){
         return
       }
 
@@ -747,7 +866,7 @@ export default {
         this.players[this.members[count]] = {
           name: this.members[count], 
           isSheriff: false,
-          securedItems: {apple: [],cheese: [],bread: [], chicken: [],illeagl: []},
+          securedItems: {apple: [],cheese: [],bread: [], chicken: [],illegal: []},
           caughtCount: 0,
           catchCount: 0,
           hands: this.getSixCards(),
@@ -779,26 +898,107 @@ export default {
     
 
     openBox(player){
+      if( confirm(`Are you sure you want to check ${player.name}?`) == false){
+        return
+      }
+
       this.target = player.name
-      player.didBoxOpen =false
+      this.theTarget = player
+      player.didBoxOpen = true
+      player.wasTruth = true
+      player.penaltyCost = 0
+      player.currentReward = 0
+      this.showModal = true
+
       let list  =[]
       for(let i in player.hands){
         if(player.hands[i].loading){
           list.push(player.hands[i])
         }
       }
-      this.openingCards = list
+
+      let flag = true
+
+      for(let i in list){
+        if(list[i].name !== player.declaredItem){
+          flag = false
+        }
+      }
+
+      // when they were honest
+      if(flag){
+        let cost =0
+        for(let i in list){
+          cost+=list[i].penalty
+        }
+        // adding to the secure
+        for(let i in player.hands){
+          let item = player.hands[i]
+          if(item.loading){
+            player.securedItems[item.name].push(item)
+            player.balance += item.reward
+          }
+        }
+        this.wasTruth = true
+        this.penaltyCost = cost
+        this.myPlayer.balance -= cost
+        this.modalStatus = 11
+      }else{
+        let cost =0
+        player.wasTruth = false
+        
+        for(let i in list){
+          if(list[i].name !== player.declaredItem) {
+            cost+=list[i].penalty
+            player.balance -= list[i].penalty
+          } 
+        }
+        player.penaltyCost = cost
+         
+
+        for(let i in list){
+          let item = list[i]
+          if(item.name == player.declaredItem) {
+            player.securedItems[item.name].push(item)
+            player.balance += item.reward
+            player.currentReward += item.reward
+
+          }
+        }
+
+        
+
+
+        this.wasTruth = false
+        this.penaltyCost = cost
+        this.modalStatus = 12
+      }
+
+      this.reRepick(player)
+      player.state = 'through'
+
+      if(this.isFinalRound  ){
+        if(this.waitingList?.length == this.reorderedList.length ){
+          console.log('finishing game')
+          this.finishGame()
+          return 
+        }
+      }
+      this.updatingWholeData()
     },
     passBox(player){
       player.didBoxOpen =false
+      player.currentReward = 0
       for(let i in player.hands){
         let item = player.hands[i]
       
         if(item.loading){
 
           if(item.type == 'illegal'){
-            player.securedItems['illeagl'].push(item)
+            player.securedItems['illegal'].push(item)
           }else{
+            player.currentReward+= item.reward
+            player.balance += item.reward
             player.securedItems[item.name].push(item)
           }
         }
@@ -806,6 +1006,14 @@ export default {
 
       this.reRepick(player)
       player.state = 'through'
+      if(this.isFinalRound  ){
+        if(this.waitingList?.length == this.reorderedList.length ){
+          console.log('finishing game')
+          this.modalStatus = 20
+          this.finishGame()
+          return 
+        }
+      }
       this.updatingWholeData()
     },
 
@@ -850,13 +1058,14 @@ export default {
       
       db.collection("rooms").doc(`${this.roomCode}`)
       .onSnapshot((doc) => {
+        this.generalData = doc.data()
         this.currentRound = parseInt(doc.data().currentRound)
         
         // joining room and wait until it closes
         if(this.progressNum ==0){
           this.gameStatus = doc.data().gameStatus
           this.members = JSON.parse(doc.data()?.members)
-          this.finalRound = parseInt(doc.data().finalRound)
+          // this.finalRound = parseInt(doc.data().finalRound)
           this.globalList = doc.data().orderList
           
           if(!this.members.includes(this.username)){
@@ -946,7 +1155,7 @@ export default {
             player.state = false
             player.bribingCost = 0
             player.latestSituation = false
-            player.didBoxOpen = false
+            // player.didBoxOpen = false
           }
 
 
@@ -993,10 +1202,275 @@ export default {
       })
 
     },
+    
+    pickKingAndQueen(){
+      // pick apple
+      let minimum =0 
+      let appleKing =[]
+
+      for(let i in this.players){
+        let player = this.players[i]
+        if(player.securedItems['apple'].length > 0){
+          if(player.securedItems['apple'].length == minimum){
+            appleKing.push(player.name)
+          }
+
+          if(player.securedItems['apple'].length > minimum){
+            minimum = player.securedItems['apple'].length
+            appleKing = []
+            appleKing.push(player.name)
+          }
+        }
+      }
+
+
+      // pick queen
+      let appleQueen =[]
+      if(appleKing.length == 1){
+        minimum =0 
+        
+
+        for(let i in this.players){
+          let player = this.players[i]
+          if(!appleKing.includes(player.name)){
+            if(player.securedItems['apple'].length > 0){
+
+              if(player.securedItems['apple'].length == minimum){
+                appleQueen.push(player.name)
+              }
+  
+              if(player.securedItems['apple'].length > minimum){
+                minimum = player.securedItems['apple'].length
+                appleQueen = [player.name]
+              }
+            }
+          }
+        }
+
+      }
+
+      console.log(appleKing)
+
+      for(let i in appleKing){
+        this.players[appleKing[i]].balance += 20
+      }
+
+      for(let i in appleQueen){
+        this.players[appleQueen[i]].balance += 15
+      }
+
+      // pick chesse
+      minimum =0 
+      let cheeseKing =[]
+
+      for(let i in this.players){
+        let player = this.players[i]
+        if(player.securedItems['cheese'].length > 0){
+          if(player.securedItems['cheese'].length == minimum){
+            cheeseKing.push(player.name)
+          }
+
+          if(player.securedItems['cheese'].length > minimum){
+            minimum = player.securedItems['cheese'].length
+            cheeseKing = [player.name]
+          }
+        }
+      }
+
+
+      // pick queen
+      let cheeseQueen =[]
+      if(cheeseKing.length == 1){
+        minimum =0 
+        
+
+        for(let i in this.players){
+          let player = this.players[i]
+          if(!cheeseKing.includes(player.name)){
+            if(player.securedItems['cheese'].length > 0){
+
+              if(player.securedItems['cheese'].length == minimum){
+                cheeseQueen.push(player.name)
+              }
+  
+              if(player.securedItems['cheese'].length > minimum){
+                minimum = player.securedItems['cheese'].length
+                cheeseQueen = [player.name]
+              }
+            }
+          }
+        }
+
+      }
+
+      for(let i in cheeseKing){
+        this.players[cheeseKing[i]].balance += 15
+      }
+
+      for(let i in cheeseQueen){
+        this.players[cheeseQueen[i]].balance += 10
+      }
+
+      // pick bread
+      minimum =0 
+      let breadKing =[]
+
+      for(let i in this.players){
+        let player = this.players[i]
+        if(player.securedItems['bread'].length > 0){
+          if(player.securedItems['bread'].length == minimum){
+            breadKing.push(player.name)
+          }
+
+          if(player.securedItems['bread'].length > minimum){
+            minimum = player.securedItems['bread'].length
+            breadKing = [player.name]
+          }
+        }
+      }
+
+
+      // pick queen
+      let breadQueen =[]
+      if(breadKing.length == 1){
+        minimum =0 
+        
+
+        for(let i in this.players){
+          let player = this.players[i]
+          if(!breadKing.includes(player.name)){
+            if(player.securedItems['bread'].length > 0){
+
+              if(player.securedItems['bread'].length == minimum){
+                breadQueen.push(player.name)
+              }
+  
+              if(player.securedItems['bread'].length > minimum){
+                minimum = player.securedItems['bread'].length
+                breadQueen = [player.name]
+              }
+            }
+          }
+        }
+
+      }
+
+      for(let i in breadKing){
+        this.players[breadKing[i]].balance += 15
+      }
+
+      for(let i in breadQueen){
+        this.players[breadQueen[i]].balance += 10
+      }
+
+      // pick chicken
+      minimum =0 
+      let chickenKing =[]
+
+      for(let i in this.players){
+        let player = this.players[i]
+        if(player.securedItems['chicken'].length > 0){
+          if(player.securedItems['chicken'].length == minimum){
+            chickenKing.push(player.name)
+          }
+
+          if(player.securedItems['chicken'].length > minimum){
+            minimum = player.securedItems['chicken'].length
+            chickenKing = [player.name]
+          }
+        }
+      }
+
+
+      // pick queen
+      let chickenQueen =[]
+      if(chickenKing.length == 1){
+        minimum =0 
+        
+
+        for(let i in this.players){
+          let player = this.players[i]
+          if(!chickenKing.includes(player.name)){
+            if(player.securedItems['chicken'].length > 0){
+
+              if(player.securedItems['chicken'].length == minimum){
+                chickenQueen.push(player.name)
+              }
+  
+              if(player.securedItems['chicken'].length > minimum){
+                minimum = player.securedItems['chicken'].length
+                chickenQueen = [player.name]
+              }
+            }
+          }
+        }
+
+      }
+
+      for(let i in chickenKing){
+        this.players[chickenKing[i]].balance += 10
+      }
+
+      for(let i in chickenQueen){
+        this.players[chickenQueen[i]].balance += 5
+      }
+
+      return {
+        appleKing,
+        appleQueen,
+        cheeseKing,
+        cheeseQueen,
+        breadKing,
+        breadQueen,
+        chickenKing,
+        chickenQueen,
+      }
+  
+
+    },
 
     finishGame(){
-      this.showModal = true
-      this.modalStatus = 20
+
+      
+      
+      // pick king and quenn for all the items
+      let kingsAndQueens = this.pickKingAndQueen()
+
+
+      // return the for the illegal shit
+      let cost = 0
+      for(let i in this.players){
+        cost = 0
+        let player = this.players[i]
+        for(let j in player.securedItems['illegal']){
+          let item = player.securedItems['illegal'][j]
+          player.balance += item.reward
+          cost+= item.reward
+        }
+        player.illegalReward = cost
+      }
+
+      let winner 
+      let point = 0 
+      for(let i in this.players){
+        let player = this.players[i]
+        if(player.balance > point){
+          winner = player.name
+          point = player.balance
+        }
+      }
+
+
+
+      // you gotta update the whole thing
+      console.log('updating the whole')
+      const ref = db.collection('rooms')
+      ref.doc(`${this.roomCode}`).update({
+        kingsAndQueens,
+        players: this.players,
+        winner,
+
+      })
     },
 
 
@@ -1018,11 +1492,18 @@ export default {
 
     closeModal(){
       this.showModal= false
+
+      if(this.showingSummary){
+        this.modalStatus = 20
+        this.showModal= true
+      }
       if(this.showingNewSheriff){
         this.showingNewSheriff = false
         this.modalStatus = 15
         this.showModal = true
       }
+
+      
     },
 
 
@@ -1101,7 +1582,9 @@ export default {
       if(this.currentRound == 0 || this.currentRound == 1) return
 
       if(this.currentRound > this.finalRound){
-        this.finishGame()
+        // this.finishGame()
+        this.showModal = true
+        this.showingSummary = true
         return 
       }
 
@@ -1186,7 +1669,9 @@ export default {
 
     finalRound(){
       if(this.currentRound == 0 || !this.currentRound) return 
-      return this.reorderedList.length * 2
+      if(!this.reorderedList) return
+      if(this.developing) return 2
+      return this.reorderedList.length * 3
     },
 
     currentSheriff(){
@@ -1200,6 +1685,14 @@ export default {
 
 
     },
+
+    isFinalRound(){
+      if(this.currentRound == this.finalRound){
+        return true
+      }else{
+        return false
+      }
+    }
 
 
 
@@ -1736,5 +2229,8 @@ input[type=number], select {
 }
 
 
-
+.summary img{
+  width: 20px;
+  height: auto;
+}
 </style>
