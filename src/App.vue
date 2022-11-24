@@ -46,7 +46,9 @@
               <div class="button-wrapper">
                 <div><button @click="goNext()" class="button1" v-if="gameState== 'selecting'">Ready</button></div>
                 <div><button @click="submit()" class="button1" v-if="gameState== 'loading'">Submit</button></div>
-                <div><button @click="goback()" class="back" v-if="gameState== 'declaring'" >go back</button></div>
+                <div v-if="gameState== 'declaring'"><button @click="goback()" class="back"  style="margin-right:30px">go back</button>
+                  I'm taking {{loadingNum}} of ... 
+                </div>
 
                 <div v-if="developing" style="margin-left: 30px">
                   <button @click="autoSubmit()" class="back">skip submit</button>
@@ -54,7 +56,7 @@
               </div>
       
               <div class="declratng" v-if="gameState == 'declaring'">
-                <h3>I'm taking {{loadingNum}} of ... </h3>
+                
                 <section class="radio">
                   <div @click="declare('apple')"><img src="../public/pics/apple.svg" alt=""></div>
                   <div @click="declare('cheese')"><img src="../public/pics/cheese.svg" alt=""></div>
@@ -196,14 +198,14 @@
         </table>
       </div>
 
-      <div><!-- for the bottom --> 
+      <div style="font-size:66%;"><!-- for the bottom --> 
 
-        <div style="position:absolute; bottom:10px; left: 20px;">
+        <div style="position:absolute; bottom:5px; left: 20px;">
           #{{roomCode}}. Hello {{username}}! [{{currentRound}}/ {{finalRound}}]
         </div>
   
-        <div style="position:absolute; bottom:7.5px; right: 20px;">
-          <i class="fa fa-question-circle" style="font-size:25px;color:red;"></i>
+        <div style="position:absolute; bottom:5px; right: 20px;">
+          <i class="fa fa-question-circle" style="font-size:20px;color:red;"></i>
         </div>
       </div>
 
@@ -316,10 +318,20 @@
 
           </div>
 
-          <div v-if="modalStatus == 12 " style="color:black">
+          <div v-if="modalStatus == 12 " style="color:black" class='lying'>
             <span>{{theTarget.name}} was not telling the truth</span>
             <br>
             <strong>{{theTarget.name}} had to pay {{penaltyCost}}</strong>
+
+            <hr>
+            <span>{{theTarget.name}} was saying {{lyingNum}} <img :src="getImgSrc(lyingItem)" alt=""></span>
+            <br>
+            <span>but this is what {{theTarget.name}} had</span>
+            <br>
+
+            <template v-for="(item, i) in lyingList" :key='i'>
+              <img :src="getImgSrc(item.name, item.illegal)" alt="" style="padding:5px">
+            </template>
 
             <hr>
 
@@ -441,8 +453,8 @@ export default {
       tempName: 'playerOne',
       removeableIndex: [],
 
-      developing: false,
-      // developing: true,
+      // developing: false,
+      developing: true,
       isHost: false,
 
       declaredItem: undefined,
@@ -488,6 +500,10 @@ export default {
       showingSummary: false,
       generalData: undefined,
 
+      lyingList: [],
+      lyingItem: undefined,
+      lyingNum: undefined,
+
 
 
       
@@ -496,7 +512,7 @@ export default {
   methods:{
     
     setup(){
-      this.modalStatus++
+      if(this.developing) this.modalStatus++
     },
     getSixCards(){
       let list = []
@@ -658,7 +674,7 @@ export default {
         return
       }
 
-      if(confirm(`Are you sure you want change ${this.trashNum} cards?`) == true){
+      if(confirm(`Changing ${this.trashNum} cards?`) == true){
         this.rePick()
         console.log(this.myPlayer.hands)
         this.gameState = 'loading' 
@@ -877,6 +893,7 @@ export default {
           latestSituation: false,
           didBoxOpen: false,
           index: count,
+          
         }
 
         if(count == 0){
@@ -946,6 +963,9 @@ export default {
       }else{
         let cost =0
         player.wasTruth = false
+        this.lyingList = list
+        this.lyingItem =  player.declaredItem
+        this.lyingNum = list.length
         
         for(let i in list){
           if(list[i].name !== player.declaredItem) {
@@ -1671,7 +1691,7 @@ export default {
       if(this.currentRound == 0 || !this.currentRound) return 
       if(!this.reorderedList) return
       if(this.developing) return 2
-      return this.reorderedList.length * 3
+      return this.reorderedList.length * 2
     },
 
     currentSheriff(){
@@ -1900,7 +1920,7 @@ input[type=number], select {
   /* position:relative; */
   width: 90vw;
   /* height: 70vh; */
-  margin: 1em auto 0;
+  margin: 10px auto 0;
   /* display:flex; */
   /* background-color: black; */
 }
@@ -2059,7 +2079,7 @@ input[type=number], select {
 
 .controller .radio img{
   padding: 10px;
-  width: 50px;
+  width: 40px;
   height: auto;
   filter: invert(99%) sepia(6%) saturate(2%) hue-rotate(264deg) brightness(104%) contrast(100%);
 }
@@ -2187,7 +2207,7 @@ input[type=number], select {
   font-weight: bold;
   position: absolute;
 
-  bottom: 45px;
+  bottom: 30px;
   width: 90%;
   /* height: 30%; */
   left: 50%;
@@ -2232,5 +2252,12 @@ input[type=number], select {
 .summary img{
   width: 20px;
   height: auto;
+}
+
+.lying img{
+  width: 30px;
+  height: auto;
+  vertical-align:top;
+
 }
 </style>
