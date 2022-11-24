@@ -1061,7 +1061,7 @@ export default {
 
     accpetBribe(player){
       // take out the money and let it pass
-      this.passBox(player)
+      
       if( confirm(`Are you sure you want to take the bribe from ${player.name}?`) == true){
         this.myPlayer.balance = this.myPlayer.balance +  parseInt(player.bribingCost)
         player.balance-= player.bribingCost
