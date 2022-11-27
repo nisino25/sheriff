@@ -443,6 +443,7 @@ import { copyText } from 'vue3-clipboard'
 
 export default {
   name: 'App',
+
   data(){
     return{
       cards,
@@ -766,6 +767,7 @@ export default {
       }
 
       localStorage.username = this.username
+      
 
       this.modalStatus++
     },
@@ -971,6 +973,7 @@ export default {
           if(list[i].name !== player.declaredItem) {
             cost+=list[i].penalty
             player.balance -= list[i].penalty
+            this.myPlayer.balance += list[i].penalty
           } 
         }
         player.penaltyCost = cost
@@ -1590,7 +1593,7 @@ export default {
 
     this.setup()
 
-    this.generateRandomUsername()
+    if(this.developing) this.generateRandomUsername()
   },
 
   watch:{
