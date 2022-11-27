@@ -201,7 +201,7 @@
       <div style="font-size:66%;"><!-- for the bottom --> 
 
         <div style="position:absolute; bottom:5px; left: 20px;">
-          #{{roomCode}}. Hello {{username}}! [{{currentRound}}/ {{finalRound}}]
+          #{{roomCode}}. Hello {{username}}! [{{currentRound}}/ {{finalRound}}], $ {{progressNum}}, 
         </div>
   
         <div style="position:absolute; bottom:5px; right: 20px;">
@@ -453,8 +453,8 @@ export default {
       tempName: 'playerOne',
       removeableIndex: [],
 
-      developing: false,
-      // developing: true,
+      // developing: false,
+      developing: true,
       isHost: false,
 
       declaredItem: undefined,
@@ -1080,6 +1080,10 @@ export default {
       .onSnapshot((doc) => {
         this.generalData = doc.data()
         this.currentRound = parseInt(doc.data().currentRound)
+
+        if(this.myPlayer?.isSheriff){
+          this.progressNum = 10
+        }
         
         // joining room and wait until it closes
         if(this.progressNum ==0){
@@ -1117,9 +1121,12 @@ export default {
           // this.gameStatus = 'playing'
           this.players = doc.data().players
 
+          if(this.myPlayer.isSheriff){
+            this.progressNum = 10
+          } 
           this.progressNum = 2
 
-          if(this.myPlayer.isSheriff) this.progressNum = 10
+            
 
         }
 
@@ -1613,6 +1620,8 @@ export default {
       if(!this.showModal) this.modalStatus = 15
       this.showModal = true
       this.showingNewSheriff = true
+      this.declaredItem = undefined,
+      this.declaredNum = 0,
       
 
 
@@ -1690,7 +1699,7 @@ export default {
     finalRound(){
       if(this.currentRound == 0 || !this.currentRound) return 
       if(!this.reorderedList) return
-      if(this.developing) return 2
+      if(this.developing) return 4
       return this.reorderedList.length * 2
     },
 
