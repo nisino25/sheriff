@@ -453,8 +453,8 @@ export default {
       tempName: 'playerOne',
       removeableIndex: [],
 
-      // developing: false,
-      developing: true,
+      developing: false,
+      // developing: true,
       isHost: false,
 
       declaredItem: undefined,
